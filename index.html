@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Head Up 7 Up</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f4f4f9;
+        }
+        header {
+            text-align: center;
+        }
+        .game-container {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .category-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .card {
+            font-size: 20px;
+            padding: 15px;
+            margin: 10px auto;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            max-width: 400px;
+            background-color: white;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .settings {
+            margin: 20px 0;
+            text-align: center;
+        }
+        .settings input {
+            padding: 10px;
+            font-size: 16px;
+            margin: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .controls {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Head Up 7 Up</h1>
+        <p>Select a category, then start the game!</p>
+    </header>
+    <div class="game-container">
+        <div class="settings">
+            <label for="team1">Team 1 Name:</label>
+            <input type="text" id="team1" placeholder="Enter Team 1 Name">
+            <label for="team2">Team 2 Name:</label>
+            <input type="text" id="team2" placeholder="Enter Team 2 Name">
+            <br>
+            <label for="custom-time">Set Timer (seconds):</label>
+            <input type="number" id="custom-time" value="60">
+            <br>
+            <button onclick="startCustomTimer()">Set Timer</button>
+        </div>
+        <div class="category-buttons">
+            <button onclick="selectCategory('Music')">Music</button>
+            <button onclick="selectCategory('Music - Rock')">Music - Rock</button>
+            <button onclick="selectCategory('Music - Pop')">Music - Pop</button>
+            <button onclick="selectCategory('Music - Jazz')">Music - Jazz</button>
+            <button onclick="selectCategory('Music - Rap')">Music - Rap</button>
+            <button onclick="selectCategory('Music - Atlanta Rap')">Music - Atlanta Rap</button>
+            <button onclick="selectCategory('Music - K-Pop')">Music - K-Pop</button>
+            <button onclick="selectCategory('Music - K-Pop Girl Groups')">Music - K-Pop Girl Groups</button>
+            <button onclick="selectCategory('Music - K-Pop Boy Groups')">Music - K-Pop Boy Groups</button>
+            <button onclick="selectCategory('Geography')">Geography</button>
+            <button onclick="selectCategory('Geography - USA')">Geography - USA</button>
+            <button onclick="selectCategory('Geography - Europe')">Geography - Europe</button>
+            <button onclick="selectCategory('Geography - Africa')">Geography - Africa</button>
+            <button onclick="selectCategory('Geography - South America')">Geography - South America</button>
+            <button onclick="selectCategory('World & Country')">World & Country</button>
+            <button onclick="selectCategory('Sports')">Sports</button>
+            <button onclick="selectCategory('Sports - Football')">Sports - Football</button>
+            <button onclick="selectCategory('Sports - Basketball')">Sports - Basketball</button>
+            <button onclick="selectCategory('Sports - Tennis')">Sports - Tennis</button>
+            <button onclick="selectCategory('Actors')">Actors</button>
+        </div>
+        <div id="selected-category" style="margin: 10px; font-size: 18px;">
+            Selected Category: <span id="category-name">None</span>
+        </div>
+        <button onclick="startGame()" style="margin-bottom: 20px;">Start Game</button>
+        <div class="card" id="card">Your card will appear here!</div>
+        <div id="timer">Time Left: <span id="time">60</span> seconds</div>
+        <div id="score">
+            Team 1 Score: <span id="team1-points">0</span> | Team 2 Score: <span id="team2-points">0</span>
+        </div>
+        <div class="controls">
+            <button onclick="passCard('team1')">Team 1 Pass</button>
+            <button onclick="passCard('team2')">Team 2 Pass</button>
+            <button onclick="failCard()">Fail</button>
+        </div>
+    </div>
+
+    <script>
+        const backendUrl = 'https://localhost:3000';
+        let selectedCategory = null;
+        let timeLeft = 60;
+        let currentCard = '';
+        let team1Score = 0;
+        let team2Score = 0;
+        const usedCards = new Set();
+        let gameActive = false;
+
+        function selectCategory(category) {
+            selectedCategory = category;
+            document.getElementById('category-name').textContent = category;
+        }
+
+        function startCustomTimer() {
+            const customTime = parseInt(document.getElementById('custom-time').value);
+            if (!isNaN(customTime) && customTime > 0) {
+                timeLeft = customTime;
+                document.getElementById('time').textContent = timeLeft;
+            } else {
+                alert('Please enter a valid time in seconds.');
+            }
+        }
+
+        function startTimer() {
+            const timerInterval = setInterval(() => {
+                if (gameActive && timeLeft > 0) {
+                    timeLeft--;
+                    document.getElementById('time').textContent = timeLeft;
+                } else {
+                    clearInterval(timerInterval);
+                    if (timeLeft === 0) {
+                        alert('Time is up!');
+                        gameActive = false;
+                    }
+                }
+            }, 1000);
+        }
+
+        function startGame() {
+            const team1 = document.getElementById('team1').value;
+            const team2 = document.getElementById('team2').value;
+
+            if (!team1 || !team2) {
+                alert('Please enter names for both teams.');
+                return;
+            }
+
+            if (!selectedCategory) {
+                alert('Please select a category before starting the game.');
+                return;
+            }
+
+            gameActive = true;
+            startTimer();
+            alert(`Game started in the "${selectedCategory}" category! ${team1} vs. ${team2}`);
+        }
+
+        async function generateCard() {
+            if (!gameActive) {
+                alert('Start the game first!');
+                return;
+            }
+
+            const cardElement = document.getElementById('card');
+            cardElement.textContent = 'Generating card...';
+
+            try {
+                const response = await fetch(`${backendUrl}/generate-card`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ category: selectedCategory })
+                });
+
+                const data = await response.json();
+                currentCard = data.card;
+                if (usedCards.has(currentCard)) {
+                    generateCard();
+                } else {
+                    cardElement.textContent = currentCard;
+                    usedCards.add(currentCard);
+                }
+            } catch (error) {
+                cardElement.textContent = 'Error generating card. Please try again.';
+                console.error('Error:', error);
+            }
+        }
+
+        function passCard(team) {
+            if (!currentCard) {
+                alert('No card to pass! Generate a card first.');
+                return;
+            }
+
+            if (team === 'team1') {
+                team1Score++;
+                document.getElementById('team1-points').textContent = team1Score;
+            } else if (team === 'team2') {
+                team2Score++;
+                document.getElementById('team2-points').textContent = team2Score;
+            }
+
+            currentCard = '';
+            document.getElementById('card').textContent = 'Your card will appear here!';
+        }
+
+        function failCard() {
+            if (!currentCard) {
+                alert('No card to fail! Generate a card first.');
+                return;
+            }
+
+            currentCard = '';
+            document.getElementById('card').textContent = 'Your card will appear here!';
+        }
+    </script>
+</body>
+</html>
